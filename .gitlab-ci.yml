@@ -8,8 +8,9 @@ stages:
   - package
 #  - deploy
 
-test-variable:
+test-variables:
   stage: test
+  needs: []
   script:
     - echo "${CI_COMMIT_TAG}"
     - echo "${REGISTRY_HOST}"
@@ -20,6 +21,7 @@ test-variable:
 maven-build:
   image: maven:3.8.5-openjdk-17
   stage: build
+  needs: ["test-variables"]
   script: "mvn clean package -B"
   artifacts:
     paths:
@@ -27,11 +29,11 @@ maven-build:
   only:
     - tags
 
-
 docker-build:
   stage: package
+  needs: ["maven-build"]
   script:
-    - docker build -t ${REGISTRY_HOST}/base-kotlin-project .
+    - docker build -t ${REGISTRY_HOST}/base-kotlin-project:${CI_COMMIT_TAG} .
     - docker login -u ${REGISTRY_USERNAME} -p ${REGISTRY_PASSWORD} ${REGISTRY_HOST}
     - docker push ${REGISTRY_HOST}/base-kotlin-project:${CI_COMMIT_TAG}
     - docker logout ${REGISTRY_HOST}
