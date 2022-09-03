@@ -22,4 +22,5 @@ docker-build:
   script:
     - docker build -t com.nktykntsv/base-kotlin-project .
     - docker login -u deploy -p deploy 192.168.3.20:8088
-    - docker push com.nktykntsv/base-kotlin-project
+    - docker push 192.168.3.20:8088/base-kotlin-project
+    - docker logout 192.168.3.20:8088
