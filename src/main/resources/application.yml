@@ -1,0 +1,12 @@
+settings:
+  mode: ${APP_MODE:dev}
+  server:
+    port: ${APP_PORT:8080}
+
+server:
+  port: ${settings.server.port}
+
+
+spring:
+  profiles:
+    active: ${settings.mode}
