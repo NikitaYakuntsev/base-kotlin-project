@@ -20,7 +20,6 @@ test-variables:
 maven-tests:
   image: maven:3.8.5-openjdk-17
   stage: test
-  needs: [ "test-variables" ]
   script: "mvn clean test -B"
   artifacts:
     expire_in: 5 mins
