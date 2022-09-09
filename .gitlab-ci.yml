@@ -6,7 +6,7 @@ stages:
   - test
   - build
   - package
-#  - deploy
+  - deploy
 
 test-variables:
   stage: test
@@ -17,13 +17,23 @@ test-variables:
     - echo "${REGISTRY_USERNAME}"
     - echo "${REGISTRY_PASSWORD}"
 
+maven-tests:
+  image: maven:3.8.5-openjdk-17
+  stage: test
+  needs: [ "test-variables" ]
+  script: "mvn clean test -B"
+  artifacts:
+    expire_in: 5 mins
+    paths:
+      - target/*.jar
 
 maven-build:
   image: maven:3.8.5-openjdk-17
   stage: build
   needs: ["test-variables"]
-  script: "mvn clean package -B"
+  script: "mvn clean package -B -DskipTests"
   artifacts:
+    expire_in: 24 hours
     paths:
       - target/*.jar
   only:
@@ -39,3 +49,25 @@ docker-build:
     - docker logout ${REGISTRY_HOST}
   only:
     - tags
+
+stage-deploy:
+  stage: deploy
+  needs: ["docker-build"]
+  before_script:
+    - 'which ssh-agent || ( apt update -y && apt install openssh-client bash -y )'
+    - mkdir -p ~/.ssh
+    - eval $(ssh-agent -s)
+    - '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+    - echo "$SSH_KEY" | tr -d '\r' | ssh-add - > /dev/null
+  script:
+    - ssh -p22 ${SERVER_USER}:${SERVER_URL} "sed -i \"s/version=.*$/version=${CI_COMMIT_TAG}/\" /opt/base-kotlin-project/app.env"
+    - ssh -p22 ${SERVER_USER}:${SERVER_URL} "docker-compose -f /opt/base-kotlin-project/docker-compose.yml down"
+    - ssh -p22 ${SERVER_USER}:${SERVER_URL} "docker-compose -f /opt/base-kotlin-project/docker-compose.yml up -d"
+
+cache:
+  key: ${CI_JOB_NAME}
+  paths:
+    - .m2/
+
+variables:
+  MAVEN_OPTS: -Dmaven.repo.local=${CI_PROJECT_DIR}/.m2
