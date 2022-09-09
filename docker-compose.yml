@@ -1,0 +1,13 @@
+version: '3'
+
+services:
+  base-kotlin-project:
+    image: '${registry_host}/base-kotlin-project:${version}'
+    container_name: base-kotlin-project
+    ports:
+      - "18092:${APP_PORT}"
+    volumes:
+      - "./log:/tmp/log"
+    environment:
+      - APP_MODE=${APP_MODE}
+      - APP_PORT=${APP_PORT}
